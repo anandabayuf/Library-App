@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PlusCircle } from 'react-bootstrap-icons';
 import { backgroundColor } from '../utils/Color';
-import { deleteBook, getAllBooks, returnBook } from '../api/Books';
+import { deleteBook, getAllBooks, returnBook, searchBooks } from '../api/Books';
 import BookTable from '../components/Book-List/Book-Table';
 import Loader from '../components/Loader';
 import EmptyData from '../components/Book-List/Empty-Data';
@@ -11,9 +11,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function BookList() {
 	const [books, setBooks] = useState([]);
-	const [booksList, setBooksList] = useState([]);
+	// const [booksList, setBooksList] = useState([]);
 
-	const [query, setQuery] = useState('');
+	const [searchState, setSearchState] = useState({
+		isLoading: false,
+		query: '',
+		category: 'title',
+	});
 
 	const [isFetching, setIsFetching] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +39,7 @@ export default function BookList() {
 
 		setTimeout(() => {
 			setBooks(data);
-			setBooksList(data);
+			// setBooksList(data);
 			setIsFetching(false);
 		}, 1000);
 	};
@@ -44,22 +48,70 @@ export default function BookList() {
 		getBooks();
 	}, []);
 
-	const handleChange = (e) => {
+	const handleChangeSearch = (e) => {
 		const key = e.target.name;
 		const value = e.target.value;
 
-		if (key === 'query') {
-			setQuery(value);
-			if (value === '') {
-				setBooksList(books);
-			} else {
-				setBooksList((curVal) =>
-					curVal.filter((el) =>
-						el.title.toLowerCase().includes(value.toLowerCase())
-					)
-				);
-			}
+		setSearchState({
+			...searchState,
+			[key]: value,
+		});
+
+		if (value === '') {
+			getBooks();
 		}
+	};
+
+	const handleSubmitSearch = async (e) => {
+		e.preventDefault();
+		setSearchState({
+			...searchState,
+			isLoading: true,
+		});
+		const response = await searchBooks({
+			key: searchState.category,
+			value: searchState.query,
+		});
+		const data = await response.data;
+
+		setTimeout(() => {
+			setSearchState({
+				...searchState,
+				isLoading: false,
+			});
+			if (response.status.includes('200')) {
+				//this means success to search
+				setBooks(data);
+
+				setToastState({
+					show: true,
+					title: 'SUCCESS',
+					message: response.message,
+				});
+			} else {
+				setToastState({
+					show: true,
+					title: 'ERROR',
+					message: response.message,
+				});
+			}
+
+			setTimeout(() => {
+				setToastState({
+					show: false,
+					title: '',
+					message: '',
+				});
+			});
+		}, 1000);
+	};
+
+	const handleClearSearch = () => {
+		setSearchState({
+			query: '',
+			category: 'title',
+		});
+		getBooks();
 	};
 
 	const handleReturn = async (id, index) => {
@@ -188,32 +240,29 @@ export default function BookList() {
 						<h3>Book List</h3>
 					</div>
 					<div className="col-auto">
-						<div className="row">
-							<div className="col-auto">
-								<SearchBook
-									query={query}
-									handleChangeQuerySearch={handleChange}
-								/>
-							</div>
-							<div className="col-auto">
-								<button
-									className="btn btn-outline-primary shadow"
-									style={style.button}
-									onClick={() => handleClickCreate()}
-								>
-									<PlusCircle size={16} />
-									&nbsp;Create Book
-								</button>
-							</div>
-						</div>
+						<button
+							className="btn btn-outline-primary shadow"
+							style={style.button}
+							onClick={() => handleClickCreate()}
+						>
+							<PlusCircle size={16} />
+							&nbsp;Create Book
+						</button>
 					</div>
 				</div>
-
+				<div className="mb-3">
+					<SearchBook
+						searchState={searchState}
+						handleChangeSearch={handleChangeSearch}
+						handleSubmitSearch={handleSubmitSearch}
+						handleClearSearch={handleClearSearch}
+					/>
+				</div>
 				{isFetching ? (
 					<Loader />
-				) : booksList.length !== 0 ? (
+				) : books.length !== 0 ? (
 					<BookTable
-						books={booksList}
+						books={books}
 						handleReturn={handleReturn}
 						isLoading={isLoading}
 						currentIndex={currentIndex}

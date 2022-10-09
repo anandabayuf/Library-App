@@ -14,15 +14,20 @@ exports.create = (data) => {
 
 exports.getAll = (query) => {
 	let { limit, ...search } = query;
+	const key = Object.keys(search);
+	const value = search[key];
 
 	return new Promise((resolve, reject) => {
-		schema.BookSchema.find(search, (err, result) => {
-			if (err) {
-				reject(err);
-			} else {
-				resolve(result);
+		schema.BookSchema.find(
+			{ [key]: { $regex: `^${value}`, $options: 'i' } },
+			(err, result) => {
+				if (err) {
+					reject(err);
+				} else {
+					resolve(result);
+				}
 			}
-		});
+		);
 	});
 };
 

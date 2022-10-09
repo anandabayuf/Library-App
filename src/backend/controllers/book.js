@@ -4,6 +4,7 @@ const router = express.Router();
 const BookModel = require('../models/book');
 
 router.get('', async (req, res) => {
+	// console.log(req.query)
 	try {
 		res.status(200).json({
 			message: 'Successfully get all books data',

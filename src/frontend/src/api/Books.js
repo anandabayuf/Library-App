@@ -11,6 +11,17 @@ const getAllBooks = async () => {
 	}
 };
 
+const searchBooks = async ({ key, value }) => {
+	try {
+		const response = await fetch(`${BASE_URL}?${key}=${value}`);
+		const responseJson = await response.json();
+
+		return responseJson;
+	} catch (err) {
+		alert(err);
+	}
+};
+
 const getBookById = async (id) => {
 	try {
 		const response = await fetch(`${BASE_URL}/${id}`);
@@ -110,4 +121,5 @@ export {
 	checkOutBook,
 	returnBook,
 	deleteBook,
+	searchBooks,
 };
